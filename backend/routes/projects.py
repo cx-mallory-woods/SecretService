@@ -20,8 +20,8 @@ def get_projects():
     status_filter = request.args.get('status', '')
     
     if search:
-        query = f"SELECT * FROM projects WHERE name LIKE '%{search}%' OR description LIKE '%{search}%'"
-        result = db.session.execute(text(query))
+        query = text("SELECT * FROM projects WHERE name LIKE :search OR description LIKE :search")
+        result = db.session.execute(query, {"search": f"%{search}%"})
         projects = [dict(row) for row in result]
     else:
         projects = Project.query.all()
