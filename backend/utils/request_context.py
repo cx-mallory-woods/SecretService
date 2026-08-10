@@ -1,5 +1,5 @@
 # Request context utilities
-from flask import _request_ctx_stack
+from flask import g, has_request_context
 from werkzeug.local import LocalProxy
 import uuid
 from datetime import datetime
@@ -7,49 +7,45 @@ from datetime import datetime
 # Request ID stored in request context
 def _get_request_id():
     """Get request ID from request context"""
-    ctx = _request_ctx_stack.top
-    if ctx is not None:
-        if not hasattr(ctx, 'request_id'):
-            ctx.request_id = str(uuid.uuid4())
-        return ctx.request_id
-    return None
+    if not has_request_context():
+        return None
+    if not hasattr(g, 'request_id'):
+        g.request_id = str(uuid.uuid4())
+    return g.request_id
 
 # LocalProxy for request ID
-request_id = LocalProxy(lambda: getattr(_request_ctx_stack.top, "request_id", None) if _request_ctx_stack.top else None)
+request_id = LocalProxy(lambda: getattr(g, "request_id", None))
 
 def get_request_context():
     """Get the current request context"""
-    return _request_ctx_stack.top
+    return g if has_request_context() else None
 
 def set_request_metadata(key, value):
     """Store metadata in request context"""
-    ctx = _request_ctx_stack.top
-    if ctx is not None:
-        if not hasattr(ctx, 'request_metadata'):
-            ctx.request_metadata = {}
-        ctx.request_metadata[key] = value
+    if not has_request_context():
+        return
+    if not hasattr(g, 'request_metadata'):
+        g.request_metadata = {}
+    g.request_metadata[key] = value
 
 def get_request_metadata(key, default=None):
     """Retrieve metadata from request context"""
-    ctx = _request_ctx_stack.top
-    if ctx is not None and hasattr(ctx, 'request_metadata'):
-        return ctx.request_metadata.get(key, default)
-    return default
+    if not has_request_context() or not hasattr(g, 'request_metadata'):
+        return default
+    return g.request_metadata.get(key, default)
 
 def get_request_start_time():
     """Get request start time from context"""
-    ctx = _request_ctx_stack.top
-    if ctx is not None:
-        if not hasattr(ctx, 'request_start_time'):
-            ctx.request_start_time = datetime.utcnow()
-        return ctx.request_start_time
-    return None
+    if not has_request_context():
+        return None
+    if not hasattr(g, 'request_start_time'):
+        g.request_start_time = datetime.utcnow()
+    return g.request_start_time
 
 def get_request_duration():
     """Calculate request duration"""
-    ctx = _request_ctx_stack.top
-    if ctx is not None and hasattr(ctx, 'request_start_time'):
-        delta = datetime.utcnow() - ctx.request_start_time
-        return delta.total_seconds()
-    return None
+    if not has_request_context() or not hasattr(g, 'request_start_time'):
+        return None
+    delta = datetime.utcnow() - g.request_start_time
+    return delta.total_seconds()
 

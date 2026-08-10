@@ -14,7 +14,7 @@ from database import init_db
 # Import route handlers
 from routes import auth, projects, tasks, documents, messages, api
 from utils.logger import setup_logger
-from utils.request_context import _get_request_id, get_request_context, set_request_metadata, get_request_start_time
+from utils.request_context import _get_request_id, set_request_metadata, get_request_start_time
 from utils.jinja_filters import format_datetime, user_display_name, truncate, md5_hash, request_id_filter, format_file_size, role_badge
 
 app = Flask(__name__)
@@ -50,18 +50,15 @@ app.jinja_env.filters['role_badge'] = role_badge
 @app.before_request
 def init_request_context():
     """Initialize request context"""
-    from flask import _request_ctx_stack
-    ctx = _request_ctx_stack.top
-    if ctx is not None:
-        # Initialize request ID
-        _get_request_id()
-        # Set request start time
-        get_request_start_time()
-        # Store request metadata
-        set_request_metadata('ip_address', request.remote_addr)
-        set_request_metadata('user_agent', request.headers.get('User-Agent', 'Unknown'))
-        set_request_metadata('method', request.method)
-        set_request_metadata('path', request.path)
+    # Initialize request ID
+    _get_request_id()
+    # Set request start time
+    get_request_start_time()
+    # Store request metadata
+    set_request_metadata('ip_address', request.remote_addr)
+    set_request_metadata('user_agent', request.headers.get('User-Agent', 'Unknown'))
+    set_request_metadata('method', request.method)
+    set_request_metadata('path', request.path)
 
 # Register blueprints
 app.register_blueprint(auth.bp, url_prefix='/api/auth')
